@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta content="initial-scale=1.0, width=device-width" name="viewport" />
+        <meta content="ie=edge" http-equiv="X-UA-Compatible" />
+        <meta content="light" name="color-scheme" />
+        <meta content="#0d6efd" name="theme-color" />
+        <link href="favicon.svg" rel="icon" type="image/svg+xml" />
+        <title>ArX Finote - Catat Pemasukan & Pengeluaran Harian</title>
+        <meta
+            content="Aplikasi keuangan lokal berbasis web, gratis, dan open-source."
+            name="description"
+        />
+
+        <meta content="website" property="og:type" />
+        <meta
+            content="ArX Finote - Catat Pemasukan & Pengeluaran"
+            property="og:title"
+        />
+        <meta
+            content="Aplikasi keuangan lokal berbasis web, gratis, dan open-source."
+            property="og:description"
+        />
+        <meta
+            content="https://arxcode40.github.io/arxfinote/"
+            property="og:url"
+        />
+        <meta
+            content="https://arxcode40.github.io/arxfinote/og-image.png"
+            property="og:image"
+        />
+        <meta content="Preview ArX Finote" property="og:image:alt" />
+        <meta content="ArX Finote" property="og:site_name" />
+
+        <link rel="manifest" href="manifest.json" />
+        <meta content="yes" name="mobile-web-app-capable" />
+        <meta content="default" name="apple-mobile-web-app-status-bar-style" />
+        <meta content="ArX Finote" name="apple-mobile-web-app-title" />
+        <link rel="apple-touch-icon" href="icon-192.png" />
+
+        <link href="https://arxcode40.github.io/arxfinote/" rel="canonical" />
+        <link href="https://cdn.jsdelivr.net" rel="preconnect" />
+        <link href="https://cdn.jsdelivr.net" rel="dns-prefetch" />
+
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/aos/dist/aos.min.css"
+            rel="stylesheet"
+        />
+        <link href="index.min.css" rel="stylesheet" />
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/aos/dist/aos.min.js"></script>
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/@alpinejs/mask/dist/cdn.min.js"
+        ></script>
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs/dist/cdn.min.js"
+        ></script>
+        <script src="https://cdn.jsdelivr.net/npm/idb/build/umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/dayjs/dayjs.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/dayjs/locale/id.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/downloadjs/download.min.js"></script>
+        <script src="index.min.js"></script>
+    </head>
+    <body
+        class="bg-body-secondary d-flex flex-column min-dvh-100"
+        x-data="finoteApp"
+    >
+        <nav
+            class="bg-body-tertiary border-bottom navbar navbar-expand-lg shadow-sm sticky-top"
+        >
+            <div class="container">
+                <a
+                    class="align-items-center d-flex navbar-brand"
+                    :href="document.URL"
+                >
+                    <img
+                        alt="Logo ArX Finote - Aplikasi Catatan Keuangan"
+                        decoding="async"
+                        fetchpriority="high"
+                        height="24"
+                        loading="lazy"
+                        src="favicon.svg"
+                        width="24"
+                    />
+                    <span class="fw-medium ms-2">ArX Finote</span>
+                </a>
+                <button
+                    aria-controls="navbarCollapse"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation"
+                    class="navbar-toggler"
+                    data-bs-target="#navbarCollapse"
+                    data-bs-toggle="collapse"
+                    type="button"
+                >
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                    <ul class="mb-2 mb-lg-0 ms-auto navbar-nav">
+                        <li class="nav-item">
+                            <button
+                                aria-label="Export data"
+                                class="nav-link"
+                                type="button"
+                                @click="exportData"
+                            >
+                                <i class="bi bi-upload"></i>
+                                Ekspor
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <label
+                                aria-label="Import data"
+                                class="nav-link"
+                                for="import"
+                                role="button"
+                            >
+                                <i class="bi bi-download"></i>
+                                Impor
+                            </label>
+                            <input
+                                accept=".json"
+                                hidden
+                                id="import"
+                                type="file"
+                                @change="importData"
+                            />
+                        </li>
+                    </ul>
+                    <form class="d-flex ms-lg-2" role="search" @submit.prevent>
+                        <label class="visually-hidden" for="search">Cari</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input
+                                aria-label="Search"
+                                class="form-control"
+                                id="search"
+                                placeholder="Cari..."
+                                type="search"
+                                x-model="searchQuery"
+                            />
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </nav>
+        <main class="flex-grow-1 container py-3">
+            <h1 class="visually-hidden">
+                Ringkasan Keuangan & Daftar Transaksi
+            </h1>
+            <div class="g-3 row">
+                <section
+                    aria-labelledby="totalIncome"
+                    class="col-md-4"
+                    data-aos="fade-down"
+                >
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="align-items-center d-flex">
+                                <div class="me-auto">
+                                    <p
+                                        class="card-title text-muted"
+                                        id="totalIncome"
+                                    >
+                                        Pemasukan
+                                    </p>
+                                    <h2
+                                        class="card-text h5 text-success"
+                                        x-text="formatCurrency(totalIncome)"
+                                    ></h2>
+                                </div>
+                                <i
+                                    class="af-panel-icon bi bi-graph-up-arrow text-success"
+                                ></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section
+                    aria-labelledby="totalExpense"
+                    class="col-md-4"
+                    data-aos="fade-down"
+                    data-aos-delay="100"
+                >
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="align-items-center d-flex">
+                                <div class="me-auto">
+                                    <p
+                                        class="card-title text-muted"
+                                        id="totalExpense"
+                                    >
+                                        Pengeluaran
+                                    </p>
+                                    <h2
+                                        class="card-text h5 text-danger"
+                                        x-text="formatCurrency(totalExpense)"
+                                    ></h2>
+                                </div>
+                                <i
+                                    class="af-panel-icon bi bi-graph-down-arrow text-danger"
+                                ></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section
+                    aria-labelledby="totalBalance"
+                    class="col-md-4"
+                    data-aos="fade-down"
+                    data-aos-delay="200"
+                >
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="align-items-center d-flex">
+                                <div class="me-auto">
+                                    <p
+                                        class="card-title text-muted"
+                                        id="totalBalance"
+                                    >
+                                        Saldo
+                                    </p>
+                                    <h2
+                                        class="card-text h5"
+                                        :class="balance > 0 ? 'text-primary' : 'text-danger'"
+                                        x-text="formatCurrency(balance)"
+                                    ></h2>
+                                </div>
+                                <i
+                                    class="af-panel-icon bi bi-cash-stack"
+                                    :class="balance > 0 ? 'text-primary' : 'text-danger'"
+                                ></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <section
+                class="card mt-3 shadow-sm"
+                data-aos="fade-right"
+                data-aos-delay="300"
+            >
+                <div class="card-body">
+                    <form class="align-items-center g-3 row row-cols-md-auto">
+                        <fieldset class="col-auto">
+                            <legend class="fs-6 mb-0">Filter:</legend>
+                        </fieldset>
+                        <div class="col-12">
+                            <label class="visually-hidden" for="category"
+                                >Kategori</label
+                            >
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-tags-fill"></i>
+                                </span>
+                                <select
+                                    class="form-select"
+                                    id="category"
+                                    x-model="filterCategory"
+                                >
+                                    <option value="">Semua</option>
+                                    <option value="income">Pemasukan</option>
+                                    <option value="expense">Pengeluaran</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="visually-hidden" for="month"
+                                >Bulan</label
+                            >
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-calendar-month-fill"></i>
+                                </span>
+                                <input
+                                    class="form-control"
+                                    id="month"
+                                    type="month"
+                                    x-model="filterMonth"
+                                />
+                            </div>
+                        </div>
+                        <div class="col-12 ms-auto">
+                            <button
+                                aria-label="Create"
+                                aria-haspopup="dialog"
+                                class="btn btn-primary"
+                                data-bs-target="#saveModal"
+                                data-bs-toggle="modal"
+                                type="button"
+                                @click="resetForm"
+                            >
+                                <i class="bi bi-plus-lg"></i>
+                                Tambah
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            <section
+                class="card mt-3 shadow-sm"
+                data-aos="fade-right"
+                data-aos-delay="400"
+            >
+                <h2 class="card-header h5">Daftar Transaksi</h2>
+                <template x-if="filteredTransactions.length === 0">
+                    <div class="card-body">
+                        <div
+                            class="alert alert-secondary align-items-center d-flex mb-0"
+                            role="alert"
+                        >
+                            <i
+                                class="bi bi-info-circle-fill flex-shrink-0 me-2"
+                            ></i>
+                            <div>Tidak ada transaksi.</div>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="filteredTransactions.length > 0">
+                    <ul class="list-group list-group-flush" role="list">
+                        <template
+                            x-for="transaction in filteredTransactions"
+                            :key="transaction.id"
+                        >
+                            <li
+                                class="align-items-center d-flex list-group-item list-group-item-action"
+                            >
+                                <span
+                                    class="af-circle rounded-circle"
+                                    :class="transaction.category === 'income' ? 'bg-success' : 'bg-danger'"
+                                ></span>
+                                <div class="ms-3">
+                                    <h3
+                                        class="h6 mb-0 text-body"
+                                        x-text="transaction.description"
+                                    ></h3>
+                                    <p
+                                        class="mb-0 small text-muted"
+                                        x-text="dayjs(transaction.date).format('DD MMMM YYYY')"
+                                    ></p>
+                                </div>
+                                <h3
+                                    class="h6 mb-0 ms-auto"
+                                    :class="transaction.category === 'income' ? 'text-success' : 'text-danger'"
+                                    x-text="formatCurrency(transaction.nominal)"
+                                ></h3>
+                                <button
+                                    aria-label="Edit"
+                                    class="btn btn-secondary btn-sm ms-3"
+                                    data-bs-target="#saveModal"
+                                    data-bs-toggle="modal"
+                                    type="button"
+                                    @click="editTransaction(transaction)"
+                                >
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button
+                                    aria-label="Delete"
+                                    class="btn btn-danger btn-sm ms-1"
+                                    data-bs-target="#deleteModal"
+                                    data-bs-toggle="modal"
+                                    type="button"
+                                    @click="activeID = transaction.id"
+                                >
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+            </section>
+        </main>
+        <div
+            aria-hidden="true"
+            aria-labelledby="saveModalLabel"
+            class="fade modal"
+            id="saveModal"
+            tabindex="-1"
+        >
+            <div
+                class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+            >
+                <form class="modal-content" @submit.prevent="saveTransaction">
+                    <div class="modal-header">
+                        <h2 class="h5 modal-title" id="saveModalLabel">
+                            Tambah Transaksi
+                        </h2>
+                        <button
+                            aria-label="Close"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            type="button"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="g-0 mb-3 row">
+                            <label
+                                class="col-12 col-form-label"
+                                for="description"
+                                >Deskripsi</label
+                            >
+                            <div class="col-12">
+                                <input
+                                    class="form-control"
+                                    id="description"
+                                    required
+                                    type="text"
+                                    x-model="form.description"
+                                />
+                            </div>
+                        </div>
+                        <div class="g-0 mb-3 row">
+                            <label class="col-12 col-form-label" for="nominal"
+                                >Nominal</label
+                            >
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input
+                                        class="form-control"
+                                        id="nominal"
+                                        inputmode="numeric"
+                                        required
+                                        type="text"
+                                        x-mask:dynamic="$money($input, ',')"
+                                        x-model="form.nominal"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="g-0 mb-3 row">
+                            <label class="col-12 col-form-label" for="date"
+                                >Tanggal</label
+                            >
+                            <div class="col-12">
+                                <input
+                                    class="form-control"
+                                    id="date"
+                                    required
+                                    type="date"
+                                    x-model="form.date"
+                                />
+                            </div>
+                        </div>
+                        <fieldset class="g-0 row">
+                            <legend class="col-12 col-form-label">
+                                Kategori
+                            </legend>
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <input
+                                        class="form-check-input"
+                                        id="income"
+                                        type="radio"
+                                        required
+                                        value="income"
+                                        x-model="form.category"
+                                    />
+                                    <label class="form-check-label" for="income"
+                                        >Pemasukan</label
+                                    >
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input
+                                        checked
+                                        class="form-check-input"
+                                        id="expense"
+                                        required
+                                        type="radio"
+                                        value="expense"
+                                        x-model="form.category"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="expense"
+                                        >Pengeluaran</label
+                                    >
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            aria-label="Close"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                            type="button"
+                        >
+                            <i class="bi bi-x-lg"></i>
+                            Batal
+                        </button>
+                        <button
+                            aria-label="Save"
+                            class="btn btn-primary"
+                            type="submit"
+                        >
+                            <i class="bi bi-floppy-fill"></i>
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div
+            aria-labelledby="deleteModalLabel"
+            aria-hidden="true"
+            class="fade modal"
+            id="deleteModal"
+            tabindex="-1"
+            @keydown.enter="deleteTransaction(activeID)"
+        >
+            <div
+                class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+            >
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="h5 modal-title" id="deleteModalLabel">
+                            Konfirmasi Penghapusan
+                        </h2>
+                        <button
+                            aria-label="Close"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            type="button"
+                        ></button>
+                    </div>
+                    <div class="modal-body">
+                        <div
+                            class="alert alert-danger align-items-center d-flex mb-0"
+                            role="alert"
+                        >
+                            <i
+                                class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"
+                            ></i>
+                            <div>
+                                Apakah kamu yakin ingin menghapus item ini?
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            aria-label="Close"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                            type="button"
+                        >
+                            <i class="bi bi-x-lg"></i>
+                            Batal
+                        </button>
+                        <button
+                            aria-label="Delete"
+                            class="btn btn-danger"
+                            type="button"
+                            @click="deleteTransaction(activeID)"
+                        >
+                            <i class="bi bi-trash-fill"></i>
+                            Hapus
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            aria-hidden="true"
+            class="bottom-0 end-0 p-3 position-fixed"
+            tabindex="-1"
+            x-show="scrollToTop"
+            @scroll.document="scrollToTop = document.documentElement.scrollTop"
+            x-transition
+        >
+            <button
+                aria-label="Scroll back to top"
+                class="btn btn-secondary"
+                type="button"
+                @click="document.documentElement.scrollTop = 0"
+            >
+                <i class="bi bi-arrow-up"></i>
+            </button>
+        </div>
+        <div class="bottom-0 end-0 p-3 position-fixed toast-container">
+            <div
+                aria-atomic="true"
+                aria-live="assertive"
+                class="align-items-center toast"
+                id="toast"
+                role="alert"
+            >
+                <div class="d-flex">
+                    <div class="toast-body" x-text="toastMessage"></div>
+                    <button
+                        aria-label="Close"
+                        class="btn-close m-auto me-2"
+                        data-bs-dismiss="toast"
+                        type="button"
+                    ></button>
+                </div>
+            </div>
+        </div>
+        <footer
+            class="align-items-center container d-flex flex-column flex-md-row justify-content-md-between row-gap-2 py-3"
+        >
+            <p class="mb-0">
+                &copy; <span x-text="new Date().getFullYear()"></span>
+                <a class="link-body-emphasis" :href="document.URL">ArX Finote</a
+                >. Semua hak dilindungi.
+            </p>
+            <ul
+                class="column-gap-3 d-flex justify-content-center list-unstyled nav"
+            >
+                <li>
+                    <a
+                        aria-label="Facebook"
+                        class="link-body-emphasis"
+                        href="https://www.facebook.com/aryaps.aryaps.378"
+                        target="_blank"
+                    >
+                        <i
+                            aria-hidden="true"
+                            class="af-footer-icon bi bi-facebook"
+                        ></i>
+                    </a>
+                </li>
+                <li>
+                    <a
+                        aria-label="GitHub"
+                        class="link-body-emphasis"
+                        href="https://github.com/arxcode40"
+                        target="_blank"
+                    >
+                        <i
+                            aria-hidden="true"
+                            class="af-footer-icon bi bi-github"
+                        ></i>
+                    </a>
+                </li>
+                <li>
+                    <a
+                        aria-label="Instagram"
+                        class="link-body-emphasis"
+                        href="https://www.instagram.com/arxt2411"
+                        target="_blank"
+                    >
+                        <i
+                            aria-hidden="true"
+                            class="af-footer-icon bi bi-instagram"
+                        ></i>
+                    </a>
+                </li>
+                <li>
+                    <a
+                        aria-label="X"
+                        class="link-body-emphasis"
+                        href="https://x.com/arxt2411"
+                        target="_blank"
+                    >
+                        <i
+                            aria-hidden="true"
+                            class="af-footer-icon bi bi-twitter-x"
+                        ></i>
+                    </a>
+                </li>
+            </ul>
+        </footer>
+        <script>
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                    navigator.serviceWorker.register("sw.js");
+                });
+            }
+        </script>
+    </body>
+</html>

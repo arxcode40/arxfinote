@@ -1,0 +1,22 @@
+.af-circle {
+    height: 1rem;
+    width: 1rem;
+}
+
+.af-footer-icon {
+    font-size: 1.5rem;
+}
+
+.af-panel-icon {
+    font-size: 1.75rem;
+}
+
+.min-dvh-100 {
+    min-height: 100dvh;
+}
+
+@media (min-width: 992px) {
+    .container {
+        max-width: 960px;
+    }
+}
